@@ -1,0 +1,38 @@
+name: build-postiz-gl7
+
+# Manual (workflow_dispatch) ou ao mudar Dockerfile/patches. NAO agendado:
+# rebuild puxa o :latest do upstream -> so rebuildar quando a gente decidir
+# (evita pegar breaking change do Postiz sem querer).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'patches/**'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build + push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/dev-ghost-lab7/postiz-gl7:latest
+            ghcr.io/dev-ghost-lab7/postiz-gl7:${{ github.sha }}
