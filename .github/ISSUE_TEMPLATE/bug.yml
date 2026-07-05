@@ -1,0 +1,27 @@
+name: "🐛 Bug"
+description: "Algo quebrado/errado em um site, app ou automação."
+title: "🐛 [BUG] "
+labels: ["tipo: bug"]
+body:
+  - type: input
+    id: onde
+    attributes:
+      label: "Onde (site/app/cliente)"
+      placeholder: "Ex: thiagodam.com.br, chatbot BOTA..."
+    validations: { required: true }
+  - type: textarea
+    id: oque
+    attributes:
+      label: "O que está acontecendo"
+      placeholder: "Descreva o problema. Se possível, anexe print."
+    validations: { required: true }
+  - type: textarea
+    id: esperado
+    attributes:
+      label: "O que deveria acontecer"
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: "Urgência"
+      options: ["P0 - produção quebrada", "P1 - atrapalha", "P2 - menor", "P3 - cosmético"]
+    validations: { required: true }

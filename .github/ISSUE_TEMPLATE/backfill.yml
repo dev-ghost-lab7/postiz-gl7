@@ -1,0 +1,15 @@
+name: "🧹 Backfill / Organização"
+description: "Preencher gaps, organizar, débito técnico, arrumação."
+title: "🧹 [BACKFILL] "
+labels: ["tipo: backfill"]
+body:
+  - type: input
+    id: alvo
+    attributes:
+      label: "Alvo (cliente/sistema/área)"
+    validations: { required: true }
+  - type: textarea
+    id: oque
+    attributes:
+      label: "O que organizar/preencher"
+    validations: { required: true }

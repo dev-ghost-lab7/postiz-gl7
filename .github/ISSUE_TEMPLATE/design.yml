@@ -1,0 +1,15 @@
+name: "🎨 Design / UX"
+description: "Demanda de design visual, UI, UX, revisão de layout."
+title: "🎨 [DESIGN] "
+labels: ["tipo: design"]
+body:
+  - type: input
+    id: cliente
+    attributes:
+      label: "Cliente / Projeto"
+    validations: { required: true }
+  - type: textarea
+    id: oque
+    attributes:
+      label: "O que precisa (com link do mockup/ref se tiver)"
+    validations: { required: true }

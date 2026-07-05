@@ -1,0 +1,30 @@
+name: "✍️ Conteúdo"
+description: "Demanda de conteúdo, criativo, social, copy, design editorial."
+title: "✍️ [CONTEÚDO] "
+labels: ["tipo: conteúdo"]
+body:
+  - type: markdown
+    attributes:
+      value: "Pro time de Conteúdo (Carol, Mafé). Abra um card pra cada entrega de conteúdo."
+  - type: input
+    id: cliente
+    attributes:
+      label: "Cliente / Projeto"
+      placeholder: "Ex: SUP, Ghost, OLV..."
+    validations: { required: true }
+  - type: textarea
+    id: oque
+    attributes:
+      label: "O que precisa ser feito"
+      placeholder: "Ex: 3 reels da campanha de junho, carta do cardápio, post de feriado..."
+    validations: { required: true }
+  - type: input
+    id: prazo
+    attributes:
+      label: "Prazo / data alvo"
+      placeholder: "Ex: 20/06"
+  - type: textarea
+    id: refs
+    attributes:
+      label: "Referências / observações"
+      placeholder: "Links, exemplos, tom de voz, restrições."

@@ -1,0 +1,20 @@
+name: "💼 Comercial"
+description: "Proposta, follow-up, negociação, deal."
+title: "💼 [COMERCIAL] "
+labels: ["tipo: comercial"]
+body:
+  - type: input
+    id: lead
+    attributes:
+      label: "Lead / Cliente"
+    validations: { required: true }
+  - type: textarea
+    id: contexto
+    attributes:
+      label: "Contexto / próximo passo"
+      placeholder: "Em que pé está? O que precisa ser feito?"
+    validations: { required: true }
+  - type: input
+    id: prazo
+    attributes:
+      label: "Prazo / follow-up em"

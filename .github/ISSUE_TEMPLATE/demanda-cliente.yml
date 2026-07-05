@@ -1,0 +1,31 @@
+name: "📋 Demanda de Cliente"
+description: "Algo que um cliente pediu (mensagem, call, áudio). Vira tarefa rastreável no board."
+title: "📋 [CLIENTE] "
+labels: ["tipo: melhoria"]
+body:
+  - type: markdown
+    attributes:
+      value: "Use quando um cliente pedir algo. Preencha em linguagem simples — quem ler depois entende sem contexto extra."
+  - type: input
+    id: cliente
+    attributes:
+      label: "Cliente"
+      placeholder: "Ex: BOTA, SUP, OLV..."
+    validations: { required: true }
+  - type: textarea
+    id: pedido
+    attributes:
+      label: "O que o cliente pediu (nas palavras dele)"
+      placeholder: "Cole/descreva o pedido. Se foi áudio, transcreva o essencial."
+    validations: { required: true }
+  - type: textarea
+    id: impacto
+    attributes:
+      label: "Por que importa / impacto"
+      placeholder: "O que acontece se a gente fizer (ou não fizer)?"
+  - type: dropdown
+    id: prioridade
+    attributes:
+      label: "Urgência"
+      options: ["P0 - urgente agora", "P1 - essa semana", "P2 - pode esperar", "P3 - quando der"]
+    validations: { required: true }
