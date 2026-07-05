@@ -1,0 +1,12 @@
+name: Auto-add to GL7 Pipeline
+on:
+  issues:
+    types: [opened, transferred, reopened]
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1.0.2
+        with:
+          project-url: https://github.com/orgs/dev-ghost-lab7/projects/1
+          github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
