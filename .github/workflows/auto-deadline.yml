@@ -1,0 +1,16 @@
+name: Auto-deadline (Target date +5d)
+on:
+  issues:
+    types: [opened]
+permissions:
+  issues: write
+jobs:
+  set-deadline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set Target date +5 days if opened
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DATE=$(date -u -d "+5 days" +%Y-%m-%d)
+          gh api graphql -f query="mutation{ updateIssueFieldValue(input:{issueId:\"${{ github.event.issue.node_id }}\" issueField:{fieldId:\"IFD_kgDOAoN-xg\" dateValue:\"$DATE\"}}){ issue{ number } } }"
