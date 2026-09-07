@@ -1,16 +1,62 @@
-name: Auto-deadline (Target date +5d)
+name: Auto-dates (Start date sempre · Target date so em P0/P1)
 on:
   issues:
-    types: [opened]
+    types: [opened, labeled]
 permissions:
   issues: write
 jobs:
-  set-deadline:
+  set-dates:
     runs-on: ubuntu-latest
     steps:
-      - name: Set Target date +5 days if opened
+      - name: Start date no nascimento e Target date so quando ha compromisso
         env:
           GH_TOKEN: ${{ github.token }}
+          NODE_ID: ${{ github.event.issue.node_id }}
+          F_START: IFD_kgDOAoN-xQ
+          F_TARGET: IFD_kgDOAoN-xg
+          F_PRIO: Priority
         run: |
-          DATE=$(date -u -d "+5 days" +%Y-%m-%d)
-          gh api graphql -f query="mutation{ updateIssueFieldValue(input:{issueId:\"${{ github.event.issue.node_id }}\" issueField:{fieldId:\"IFD_kgDOAoN-xg\" dateValue:\"$DATE\"}}){ issue{ number } } }"
+          set -euo pipefail
+
+          ler_campo() {
+            gh api graphql -f query="{node(id:\"$NODE_ID\"){... on Issue{issueFieldValues(first:10){nodes{
+                 ... on IssueFieldDateValue{value field{... on IssueFieldDate{name}}}
+                 ... on IssueFieldSingleSelectValue{value field{... on IssueFieldSingleSelect{name}}}}}}}}" \
+              --jq "[.data.node.issueFieldValues.nodes[]? | select(.field.name==\"$1\") | .value] | first // \"\""
+          }
+          gravar_data() {
+            gh api graphql -f query="mutation{updateIssueFieldValue(input:{issueId:\"$NODE_ID\" issueField:{fieldId:\"$1\" dateValue:\"$2\"}}){clientMutationId}}" >/dev/null
+          }
+
+          HOJE=$(date -u +%Y-%m-%d)
+
+          # 1) START DATE · a data de nascimento da tarefa. Grava uma vez e nunca mais.
+          #    E o que permite medir lead time real e quantas vezes o prazo foi repactuado.
+          if [ -z "$(ler_campo 'Start date')" ]; then
+            gravar_data "$F_START" "$HOJE"
+            echo "Start date gravado: $HOJE"
+          else
+            echo "Start date ja existe · preservado (nunca se reescreve)."
+          fi
+
+          # 2) TARGET DATE · so quando ha prioridade alta, porque prazo so vale se for promessa.
+          #    Ate 07/09/2026 este workflow carimbava +5d em TODA issue: 37 cards ficaram com a
+          #    mesma data e 211 apareciam vencidos sem ninguem ter prometido nada. Prazo que
+          #    ninguem prometeu ensina o time a ignorar prazo, inclusive o de verdade.
+          LABELS=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}" --jq '[.labels[].name] | join(",")')
+          PRIO=$(ler_campo "$F_PRIO")
+
+          ALTA=0
+          case ",$LABELS," in *,P0,*|*,P1,*) ALTA=1 ;; esac
+          case "$PRIO" in Urgent|High) ALTA=1 ;; esac
+
+          if [ "$ALTA" -ne 1 ]; then
+            echo "Prioridade nao e alta (labels='$LABELS' priority='$PRIO') · sem Target date, de proposito."
+            exit 0
+          fi
+          if [ -n "$(ler_campo 'Target date')" ]; then
+            echo "Target date ja definido · preservado (repactuacao e decisao humana)."
+            exit 0
+          fi
+          gravar_data "$F_TARGET" "$(date -u -d '+5 days' +%Y-%m-%d)"
+          echo "Target date gravado: $(date -u -d '+5 days' +%Y-%m-%d) (prioridade alta)"
