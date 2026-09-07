@@ -1,0 +1,88 @@
+name: Auto-tag (Cliente e Squad a partir do nome do repo)
+on:
+  issues:
+    types: [opened, transferred, reopened]
+permissions:
+  issues: read
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preencher Cliente e Squad no board
+        env:
+          GH_TOKEN: ${{ secrets.ADD_TO_PROJECT_PAT }}
+          PROJ: PVT_kwDOEPk5RM4BaZjC
+          REPO: ${{ github.event.repository.name }}
+          NODE_ID: ${{ github.event.issue.node_id }}
+        run: |
+          set -euo pipefail
+
+          # ---- 1. deduzir Cliente pelo nome do repo -------------------------
+          case "$REPO" in
+            *smart-social*)                 CLIENTE=SMT ;;
+            *olivers*|*golv*|cs-olv*|*-olv-*|brand-olv*) CLIENTE=OLV ;;
+            *lagiv*)                        CLIENTE=LAGIV ;;
+            *langs*)                        CLIENTE=LANGS ;;
+            *rob-food*|*rob*)               CLIENTE=ROB ;;
+            *bota*)                         CLIENTE=BOTA ;;
+            *sup*|*sushi*)                  CLIENTE=SUP ;;
+            *ita*fogo*|cs-ita*|*ita-*)      CLIENTE=ITA ;;
+            *ph-*|cs-ph|brand-ph|*phpraia*) CLIENTE=PH ;;
+            *vast*)                         CLIENTE=VAST ;;
+            *rio*galeao*|*rio-*|sav-rio*)   CLIENTE=RIO ;;
+            *wart*)                         CLIENTE=WART ;;
+            cs-tdb|tdb-*|lp-thiagodam)      CLIENTE=TDB ;;
+            cto-claude-code-2k26|sync7-claude-config) CLIENTE=CLAUDE ;;
+            *)                              CLIENTE=GL7 ;;
+          esac
+
+          # ---- 2. deduzir Squad pelo sufixo ---------------------------------
+          case "$REPO" in
+            *-performance)                  SQUAD=Performance ;;
+            *-website|*-builder|lp-*|*-app) SQUAD=Tech-Dev ;;
+            brand-*)                        SQUAD=Creative ;;
+            *)                              SQUAD=Consultoria ;;
+          esac
+          echo "repo=$REPO -> Cliente=$CLIENTE · Squad=$SQUAD"
+
+          # ---- 3. achar o item no board (o auto-add roda em paralelo) -------
+          ITEM=""
+          for tentativa in 1 2 3 4 5 6; do
+            ITEM=$(gh api graphql -f query="{node(id:\"$NODE_ID\"){... on Issue{projectItems(first:10){nodes{id project{id}}}}}}" \
+              --jq "[.data.node.projectItems.nodes[]? | select(.project.id==\"$PROJ\") | .id] | first // \"\"")
+            [ -n "$ITEM" ] && break
+            echo "  item ainda nao esta no board (tentativa $tentativa), aguardando..."
+            sleep 10
+          done
+          if [ -z "$ITEM" ]; then
+            echo "::warning::issue nao entrou no board em 60s · nada a taguear"
+            exit 0
+          fi
+
+          # ---- 4. resolver os optionId POR NOME (nunca ID fixo) -------------
+          # editar as opcoes de um single-select regenera todos os IDs em silencio
+          CAMPOS=$(gh api graphql -f query="{node(id:\"$PROJ\"){... on ProjectV2{fields(first:40){nodes{
+              ... on ProjectV2SingleSelectField{id name options{id name}}}}}}}")
+
+          id_do_campo() { echo "$CAMPOS" | jq -r --arg n "$1" '.data.node.fields.nodes[] | select(.name==$n) | .id'; }
+          id_da_opcao() { echo "$CAMPOS" | jq -r --arg n "$1" --arg o "$2" \
+              '.data.node.fields.nodes[] | select(.name==$n) | .options[] | select(.name==$o) | .id'; }
+
+          grava() { # $1=nome do campo  $2=nome da opcao
+            F=$(id_do_campo "$1"); O=$(id_da_opcao "$1" "$2")
+            if [ -z "$F" ] || [ -z "$O" ]; then
+              echo "::warning::campo '$1' ou opcao '$2' nao existe no board"; return 0
+            fi
+            gh api graphql -f query="mutation{updateProjectV2ItemFieldValue(input:{
+              projectId:\"$PROJ\" itemId:\"$ITEM\" fieldId:\"$F\"
+              value:{singleSelectOptionId:\"$O\"}}){clientMutationId}}" >/dev/null
+            echo "  $1 = $2"
+          }
+
+          grava "Cliente" "$CLIENTE"
+          grava "Squad"   "$SQUAD"
+
+          # ---- 5. provar pelo efeito, nao pelo exit code --------------------
+          gh api graphql -f query="{node(id:\"$ITEM\"){... on ProjectV2Item{fieldValues(first:20){nodes{
+            ... on ProjectV2ItemFieldSingleSelectValue{name field{... on ProjectV2SingleSelectField{name}}}}}}}}" \
+            --jq '[.data.node.fieldValues.nodes[] | select(.field.name=="Cliente" or .field.name=="Squad") | .field.name+"="+.name] | join(" · ")'
